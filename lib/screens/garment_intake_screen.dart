@@ -10,6 +10,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../app_state.dart';
+import '../models.dart';
+import '../render/photo_color_sampler.dart';
 import '../verdict/verdict_engine.dart';
 import 'processing_screen.dart';
 import 'profile_setup_screen.dart';
@@ -39,8 +41,8 @@ class _GarmentIntakeScreenState extends State<GarmentIntakeScreen> {
     try {
       final picked = await _picker.pickImage(
         source: source,
-        maxWidth: 1600,
-        imageQuality: 92,
+        maxWidth: 1200,
+        imageQuality: 88,
       );
       if (picked == null) return;
       final stored = await controller.storePhoto(picked.path, 'garment');
@@ -220,8 +222,60 @@ class _GarmentIntakeScreenState extends State<GarmentIntakeScreen> {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          onPressed: (_garmentPhotoPath == null || _busy)
+              ? null
+              : () => _saveToWardrobe(controller),
+          icon: const Icon(Icons.dry_cleaning_outlined),
+          label: const Text('Save to wardrobe'),
+        ),
+        const SizedBox(height: 6),
+        Center(
+          child: Text(
+            'For a garment you already own: save it once, then start '
+            'future try-ons from the Wardrobe tab.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+            ),
+          ),
+        ),
       ],
     );
+  }
+
+  Future<void> _saveToWardrobe(AppController controller) async {
+    if (_busy || _garmentPhotoPath == null) return;
+    setState(() => _busy = true);
+    try {
+      // A private copy: deleting a try-on record later must not remove
+      // the wardrobe item's photo.
+      final stored =
+          await controller.storePhoto(_garmentPhotoPath!, 'wardrobe');
+      final sampled = await sampleGarmentPhotoColor(stored);
+      await controller.addWardrobeItem(WardrobeItem(
+        id: 'w${DateTime.now().millisecondsSinceEpoch}',
+        createdAt: DateTime.now(),
+        photoPath: stored,
+        garment: GarmentProfile(
+          color: _color,
+          printScale: _printScale,
+          neckline: _neckline,
+          fit: _fit,
+          styles: _styles,
+          occasions: _garmentOccasions,
+        ),
+        sampledColor: sampled,
+      ));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Saved to your wardrobe.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   void _start(AppController controller) {

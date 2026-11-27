@@ -7,6 +7,7 @@
 library;
 
 import 'dart:io';
+import 'dart:isolate';
 import 'dart:ui' as ui;
 
 import '../verdict/color_sampling.dart';
@@ -25,17 +26,22 @@ Future<GarmentColor?> sampleGarmentPhotoColor(String path) async {
       final byteData =
           await image.toByteData(format: ui.ImageByteFormat.rawRgba);
       if (byteData == null) return null;
-      final sample = sampleDominantColors(
-        byteData.buffer.asUint8List(),
-        image.width,
-        image.height,
-      );
-      final dominant = sample?.dominant;
-      if (sample == null || dominant == null) return null;
-      // A photo that is almost entirely background carries no garment
-      // color worth trusting.
-      if (sample.keptPixelRatio < 0.05) return null;
-      return garmentColorFromRgb(dominant.red, dominant.green, dominant.blue);
+      final pixels = byteData.buffer.asUint8List();
+      final width = image.width;
+      final height = image.height;
+      // The histogram pass runs on a background isolate so sampling a
+      // photo never stalls the processing screen's animation. Only the
+      // decode above must stay on the UI isolate (dart:ui).
+      return await Isolate.run(() {
+        final sample = sampleDominantColors(pixels, width, height);
+        final dominant = sample?.dominant;
+        if (sample == null || dominant == null) return null;
+        // A photo that is almost entirely background carries no
+        // garment color worth trusting.
+        if (sample.keptPixelRatio < 0.05) return null;
+        return garmentColorFromRgb(
+            dominant.red, dominant.green, dominant.blue);
+      });
     } finally {
       image.dispose();
     }

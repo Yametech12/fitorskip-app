@@ -1,4 +1,4 @@
-/// The signed-in shell: four tabs over the v1 flow.
+/// The signed-in shell: five tabs over the v1 flow.
 library;
 
 import 'package:material_ui/material_ui.dart';
@@ -6,7 +6,8 @@ import 'package:material_ui/material_ui.dart';
 import 'about_screen.dart';
 import 'credits_screen.dart';
 import 'garment_intake_screen.dart';
-import 'history_screen.dart';
+import 'results_gallery_screen.dart';
+import 'wardrobe_screen.dart';
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -20,7 +21,8 @@ class _HomeShellState extends State<HomeShell> {
 
   static const List<String> _titles = [
     'FitOrSkip',
-    'History',
+    'Results',
+    'Wardrobe',
     'Credits',
     'About',
   ];
@@ -33,7 +35,8 @@ class _HomeShellState extends State<HomeShell> {
         index: _index,
         children: [
           const GarmentIntakeScreen(),
-          HistoryScreen(onTryOn: () => setState(() => _index = 0)),
+          ResultsGalleryScreen(onTryOn: () => setState(() => _index = 0)),
+          const WardrobeScreen(),
           const CreditsScreen(),
           const AboutScreen(),
         ],
@@ -48,9 +51,14 @@ class _HomeShellState extends State<HomeShell> {
             label: 'Try on',
           ),
           NavigationDestination(
-            icon: Icon(Icons.history_outlined),
-            selectedIcon: Icon(Icons.history),
-            label: 'History',
+            icon: Icon(Icons.grid_view_outlined),
+            selectedIcon: Icon(Icons.grid_view),
+            label: 'Results',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.dry_cleaning_outlined),
+            selectedIcon: Icon(Icons.dry_cleaning),
+            label: 'Wardrobe',
           ),
           NavigationDestination(
             icon: Icon(Icons.confirmation_number_outlined),

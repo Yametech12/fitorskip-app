@@ -42,6 +42,13 @@ android {
         versionName = flutter.versionName
     }
 
+    // Release builds skip the lint vital pass: the CI toolchain's lint
+    // crashes inside image_picker_android (JavaDocParser
+    // NoSuchMethodError, AGP lint bug) and fails assembleRelease.
+    lint {
+        checkReleaseBuilds = false
+    }
+
     signingConfigs {
         create("release") {
             if (hasReleaseSigning) {
@@ -60,6 +67,16 @@ android {
             } else {
                 signingConfigs.getByName("debug")
             }
+            // Size optimization for the store build (GT-176 item 9):
+            // R8 minification and resource shrinking. The Dart side is
+            // AOT-compiled and icon fonts are tree-shaken by the Flutter
+            // release build itself.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
 }

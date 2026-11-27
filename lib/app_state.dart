@@ -23,15 +23,16 @@ import 'verdict/verdict_engine.dart';
 /// is this one line plus the implementation in fal_try_on_provider.dart.
 TryOnProvider createTryOnProvider() => const DemoTryOnProvider();
 
-/// Credit model from the GT-153 plan, as display logic only. Payments are
-/// not integrated in v1.
+/// Credit model from the GT-153 plan, priced in US dollars for a
+/// global audience (owner order, GT-176 item 10). Display logic only;
+/// payments are not integrated in v1.
 class CreditModel {
   static const int freeTierTryOns = 3;
-  static const int packPricePhp = 99;
+  static const double packPriceUsd = 2.99;
   static const int packCredits = 30;
-  static const int sellerStarterPricePhp = 499;
+  static const double sellerStarterPriceUsd = 9.99;
   static const int sellerStarterTryOns = 100;
-  static const int sellerProPricePhp = 799;
+  static const double sellerProPriceUsd = 16.99;
   static const int sellerProTryOns = 200;
 }
 
@@ -43,6 +44,7 @@ class AppController extends ChangeNotifier {
   static const String _kWearer = 'fos.wearer.v1';
   static const String _kCreditsUsed = 'fos.creditsUsed.v1';
   static const String _kHistory = 'fos.history.v1';
+  static const String _kWardrobe = 'fos.wardrobe.v1';
 
   SharedPreferences? _prefs;
   bool _loaded = false;
@@ -54,6 +56,7 @@ class AppController extends ChangeNotifier {
   WearerProfile wearer = WearerProfile.defaults;
   int creditsUsed = 0;
   List<TryOnRecord> history = [];
+  List<WardrobeItem> wardrobe = [];
 
   final VerdictEngine verdictEngine = buildHeuristicVerdictEngine();
   final TryOnProvider renderProvider = createTryOnProvider();
@@ -83,6 +86,14 @@ class AppController extends ChangeNotifier {
       history = decoded
           .map((e) =>
               TryOnRecord.fromJson((e as Map).cast<String, Object?>()))
+          .toList();
+    }
+    final wardrobeJson = prefs.getString(_kWardrobe);
+    if (wardrobeJson != null) {
+      final decoded = jsonDecode(wardrobeJson) as List<Object?>;
+      wardrobe = decoded
+          .map((e) =>
+              WardrobeItem.fromJson((e as Map).cast<String, Object?>()))
           .toList();
     }
     _loaded = true;
@@ -147,6 +158,24 @@ class AppController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> addWardrobeItem(WardrobeItem item) async {
+    wardrobe = [item, ...wardrobe];
+    await _prefs?.setString(
+        _kWardrobe, jsonEncode(wardrobe.map((w) => w.toJson()).toList()));
+    notifyListeners();
+  }
+
+  Future<void> deleteWardrobeItem(WardrobeItem item) async {
+    wardrobe = wardrobe.where((w) => w.id != item.id).toList();
+    final file = File(item.photoPath);
+    if (await file.exists()) {
+      await file.delete();
+    }
+    await _prefs?.setString(
+        _kWardrobe, jsonEncode(wardrobe.map((w) => w.toJson()).toList()));
+    notifyListeners();
+  }
+
   Future<void> deleteRecord(TryOnRecord record) async {
     history = history.where((r) => r.id != record.id).toList();
     for (final path in [record.garmentPhotoPath, record.renderPhotoPath]) {
@@ -172,11 +201,13 @@ class AppController extends ChangeNotifier {
     await _prefs?.remove(_kWearer);
     await _prefs?.remove(_kCreditsUsed);
     await _prefs?.remove(_kHistory);
+    await _prefs?.remove(_kWardrobe);
     consentGiven = false;
     profilePhotoPath = null;
     wearer = WearerProfile.defaults;
     creditsUsed = 0;
     history = [];
+    wardrobe = [];
     notifyListeners();
   }
 }

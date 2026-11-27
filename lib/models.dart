@@ -145,3 +145,47 @@ class TryOnRecord {
             : GarmentColor.values.byName(json['sampledColor'] as String),
       );
 }
+
+/// One garment the wearer owns, saved in the Wardrobe: its photo, the
+/// descriptors, and the dominant color sampled from the photo when it
+/// was saved. A try-on can start from a wardrobe item directly, with no
+/// new photograph.
+class WardrobeItem {
+  const WardrobeItem({
+    required this.id,
+    required this.createdAt,
+    required this.photoPath,
+    required this.garment,
+    this.sampledColor,
+  });
+
+  final String id;
+  final DateTime createdAt;
+  final String photoPath;
+  final GarmentProfile garment;
+
+  /// Dominant color measured from the photo at save time, when sampling
+  /// succeeded. Null means the descriptor color is the record.
+  final GarmentColor? sampledColor;
+
+  GarmentColor get displayColor => sampledColor ?? garment.color;
+
+  Map<String, Object?> toJson() => {
+        'id': id,
+        'createdAt': createdAt.toIso8601String(),
+        'photoPath': photoPath,
+        'garment': garment.toJson(),
+        'sampledColor': sampledColor?.name,
+      };
+
+  factory WardrobeItem.fromJson(Map<String, Object?> json) => WardrobeItem(
+        id: json['id'] as String,
+        createdAt: DateTime.parse(json['createdAt'] as String),
+        photoPath: json['photoPath'] as String,
+        garment: GarmentProfile.fromJson(
+            (json['garment'] as Map).cast<String, Object?>()),
+        sampledColor: json['sampledColor'] == null
+            ? null
+            : GarmentColor.values.byName(json['sampledColor'] as String),
+      );
+}

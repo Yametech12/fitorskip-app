@@ -76,7 +76,7 @@ class CreditsScreen extends StatelessWidget {
                   child: Text(
                     'You are out of free try-ons. New try-ons pause '
                     'until credit packs arrive in a later phase. Your '
-                    'history and verdicts stay on this phone.',
+                    'results and verdicts stay on this phone.',
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(fontWeight: FontWeight.w600),
                   ),
@@ -105,20 +105,21 @@ class CreditsScreen extends StatelessWidget {
         ),
         const _PlanRow(
           title: 'Consumer pack',
-          price: 'P${CreditModel.packPricePhp} / month',
+          price: '\$${CreditModel.packPriceUsd} / month',
           detail: '${CreditModel.packCredits} try-on credits, verdict '
               'included. Capped on purpose: unlimited would not survive '
               'real render costs.',
         ),
         const _PlanRow(
           title: 'Seller starter',
-          price: 'P${CreditModel.sellerStarterPricePhp} / month',
+          price: '\$${CreditModel.sellerStarterPriceUsd} / month',
           detail: '${CreditModel.sellerStarterTryOns} buyer try-ons for '
-              'ukay and RTW sellers. Arrives with seller mode.',
+              'secondhand and ready-to-wear clothing sellers. Arrives '
+              'with seller mode.',
         ),
         const _PlanRow(
           title: 'Seller pro',
-          price: 'P${CreditModel.sellerProPricePhp} / month',
+          price: '\$${CreditModel.sellerProPriceUsd} / month',
           detail: '${CreditModel.sellerProTryOns} buyer try-ons, for '
               'busy shops. Arrives with seller mode.',
         ),
@@ -126,13 +127,13 @@ class CreditsScreen extends StatelessWidget {
         FilledButton(
           onPressed: null,
           child: Text(
-              'Buy P${CreditModel.packPricePhp} pack (payments arrive '
+              'Buy \$${CreditModel.packPriceUsd} pack (payments arrive '
               'in a later phase)'),
         ),
         const SizedBox(height: 8),
         Text(
-          'Payments (GCash and Maya) are not connected in this build, so '
-          'buying is disabled rather than faked.',
+          'Payments are not connected in this build, so buying is '
+          'disabled rather than faked.',
           textAlign: TextAlign.center,
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.55),

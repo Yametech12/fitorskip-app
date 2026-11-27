@@ -41,7 +41,7 @@ class DemoTryOnProvider implements TryOnProvider {
       latency: stopwatch.elapsed,
       cost: const RenderCostRecord(
         providerId: 'demo-composite',
-        estimatedCostPhp: 0,
+        estimatedCostUsd: 0,
         isDemo: true,
         note: 'Offline demo composite. No provider was called, '
             'nothing was uploaded, cost is zero.',

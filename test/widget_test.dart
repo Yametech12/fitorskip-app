@@ -54,9 +54,10 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    // Shell: bottom navigation with the four tabs.
+    // Shell: bottom navigation with the five tabs.
     expect(find.text('Try on'), findsOneWidget);
-    expect(find.text('History'), findsOneWidget);
+    expect(find.text('Results'), findsOneWidget);
+    expect(find.text('Wardrobe'), findsOneWidget);
     expect(find.text('Credits'), findsOneWidget);
     expect(find.text('About'), findsOneWidget);
     // No profile photo yet, so the Try tab asks for one first.
@@ -151,7 +152,7 @@ void main() {
       verdict: verdict,
       cost: const RenderCostRecord(
         providerId: 'demo-composite',
-        estimatedCostPhp: 0,
+        estimatedCostUsd: 0,
         isDemo: true,
         note: 'demo',
       ),
@@ -194,12 +195,112 @@ void main() {
     expect(tileOn.value, isTrue);
   });
 
+  testWidgets('results gallery shows cards and opens the full result',
+      (tester) async {
+    usePhoneSurface(tester);
+    final controller = await loadedController(seed: {
+      'fos.consent.v1': true,
+    });
+    const garment = GarmentProfile(
+      color: GarmentColor.navy,
+      printScale: PrintScale.large,
+      neckline: Neckline.turtleneck,
+      fit: GarmentFit.slim,
+      styles: {StyleTag.casual},
+      occasions: {Occasion.everyday},
+    );
+    final verdict = buildHeuristicVerdictEngine().evaluate(
+      const VerdictContext(
+        wearer: WearerProfile.defaults,
+        garment: garment,
+        occasion: Occasion.everyday,
+      ),
+    );
+    controller.history = [
+      TryOnRecord.fromVerdict(
+        id: 'gal1',
+        createdAt: DateTime(2026, 11, 27, 9, 15),
+        profilePhotoPath: 'test/fixtures/profile.png',
+        garmentPhotoPath: 'test/fixtures/garment.png',
+        renderPhotoPath: 'test/fixtures/garment.png',
+        garment: garment,
+        occasion: Occasion.everyday,
+        verdict: verdict,
+        cost: const RenderCostRecord(
+          providerId: 'demo-composite',
+          estimatedCostUsd: 0,
+          isDemo: true,
+          note: 'demo',
+        ),
+      ),
+    ];
+    await tester.pumpWidget(FitOrSkipApp(controller: controller));
+    await tester.pump();
+
+    await tester.tap(find.text('Results'));
+    await tester.pump();
+    // Gallery card: band chip, date, delete affordance.
+    expect(find.textContaining('2026-11-27'), findsOneWidget);
+    expect(find.byTooltip('Delete this result'), findsOneWidget);
+
+    // Tapping the card opens the full result view.
+    await tester.tap(find.textContaining('2026-11-27'));
+    await tester.pumpAndSettle();
+    expect(find.text('Your verdict'), findsOneWidget);
+    expect(find.text('Save garment to wardrobe'), findsOneWidget);
+  });
+
+  testWidgets('wardrobe persists items and opens the item detail',
+      (tester) async {
+    usePhoneSurface(tester);
+    final controller = await loadedController(seed: {
+      'fos.consent.v1': true,
+    });
+    await controller.addWardrobeItem(WardrobeItem(
+      id: 'wtest1',
+      createdAt: DateTime(2026, 11, 27, 8, 0),
+      photoPath: 'test/fixtures/garment.png',
+      garment: GarmentProfile(
+        color: GarmentColor.navy,
+        printScale: PrintScale.none,
+        neckline: Neckline.crew,
+        fit: GarmentFit.regular,
+        styles: {StyleTag.casual},
+        occasions: {Occasion.everyday},
+      ),
+      sampledColor: GarmentColor.teal,
+    ));
+
+    // A fresh controller over the same store sees the item: it
+    // persisted across an app restart.
+    final reloaded = AppController();
+    await reloaded.load();
+    expect(reloaded.wardrobe, hasLength(1));
+    expect(reloaded.wardrobe.single.sampledColor, GarmentColor.teal);
+    expect(reloaded.wardrobe.single.displayColor, GarmentColor.teal);
+
+    await tester.pumpWidget(FitOrSkipApp(controller: controller));
+    await tester.pump();
+    await tester.tap(find.text('Wardrobe'));
+    await tester.pump();
+    expect(find.text('Teal crew neck'), findsOneWidget);
+    expect(find.text('Color read from its photo'), findsOneWidget);
+
+    await tester.tap(find.text('Teal crew neck'));
+    await tester.pumpAndSettle();
+    expect(find.text('Wardrobe item'), findsOneWidget);
+    expect(find.text('See it on me'), findsOneWidget);
+    expect(find.textContaining('read from its photo'), findsWidgets);
+  });
+
   test('credit model matches the plan numbers', () {
     expect(CreditModel.freeTierTryOns, 3);
-    expect(CreditModel.packPricePhp, 99);
+    expect(CreditModel.packPriceUsd, 2.99);
     expect(CreditModel.packCredits, 30);
-    expect(CreditModel.sellerStarterPricePhp, 499);
-    expect(CreditModel.sellerProPricePhp, 799);
+    expect(CreditModel.sellerStarterPriceUsd, 9.99);
+    expect(CreditModel.sellerStarterTryOns, 100);
+    expect(CreditModel.sellerProPriceUsd, 16.99);
+    expect(CreditModel.sellerProTryOns, 200);
     expect(VerdictBandLabel.fromScore(75), VerdictBand.bagay);
   });
 }

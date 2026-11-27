@@ -29,7 +29,7 @@ void main() {
     final (result, size) = outcome!;
 
     expect(result.isDemo, isTrue);
-    expect(result.cost.estimatedCostPhp, 0);
+    expect(result.cost.estimatedCostUsd, 0);
     expect(result.cost.providerId, 'demo-composite');
     expect(result.renderPngBytes.length, greaterThan(10000));
     // PNG magic bytes.

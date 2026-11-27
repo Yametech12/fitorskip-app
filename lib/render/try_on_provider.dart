@@ -26,21 +26,21 @@ class TryOnRequest {
 class RenderCostRecord {
   const RenderCostRecord({
     required this.providerId,
-    required this.estimatedCostPhp,
+    required this.estimatedCostUsd,
     required this.isDemo,
     required this.note,
   });
 
   final String providerId;
 
-  /// Estimated cost in Philippine pesos. Demo renders are honestly 0.
-  final double estimatedCostPhp;
+  /// Estimated cost in US dollars. Demo renders are honestly 0.
+  final double estimatedCostUsd;
   final bool isDemo;
   final String note;
 
   Map<String, Object?> toJson() => {
         'providerId': providerId,
-        'estimatedCostPhp': estimatedCostPhp,
+        'estimatedCostUsd': estimatedCostUsd,
         'isDemo': isDemo,
         'note': note,
       };
@@ -48,7 +48,13 @@ class RenderCostRecord {
   factory RenderCostRecord.fromJson(Map<String, Object?> json) =>
       RenderCostRecord(
         providerId: json['providerId'] as String,
-        estimatedCostPhp: (json['estimatedCostPhp'] as num).toDouble(),
+        // Records saved before the USD switch (GT-176 item 10) carry
+        // the old key; every such record is a demo render at 0, so
+        // reading it under the new name loses nothing.
+        estimatedCostUsd:
+            ((json['estimatedCostUsd'] ?? json['estimatedCostPhp'] ?? 0)
+                    as num)
+                .toDouble(),
         isDemo: json['isDemo'] as bool,
         note: json['note'] as String,
       );

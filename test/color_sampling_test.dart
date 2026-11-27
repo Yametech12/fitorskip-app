@@ -245,7 +245,7 @@ void main() {
         verdict: verdict,
         cost: const RenderCostRecord(
           providerId: 'demo-composite',
-          estimatedCostPhp: 0,
+          estimatedCostUsd: 0,
           isDemo: true,
           note: 'demo',
         ),
@@ -287,7 +287,7 @@ void main() {
         verdict: verdict,
         cost: const RenderCostRecord(
           providerId: 'demo-composite',
-          estimatedCostPhp: 0,
+          estimatedCostUsd: 0,
           isDemo: true,
           note: 'demo',
         ),

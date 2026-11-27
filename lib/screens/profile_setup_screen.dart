@@ -32,8 +32,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     try {
       final picked = await _picker.pickImage(
         source: source,
-        maxWidth: 1600,
-        imageQuality: 92,
+        maxWidth: 1200,
+        imageQuality: 88,
       );
       if (picked == null) return;
       final stored = await controller.storePhoto(picked.path, 'profile');

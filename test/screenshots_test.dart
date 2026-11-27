@@ -27,7 +27,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const String profileFixture = 'test/fixtures/profile.png';
 const String garmentFixture = 'test/fixtures/garment.png';
+
 const String testFontFamily = 'FOSFont';
+
 
 Future<void> loadTestFonts() async {
   final textLoader = FontLoader(testFontFamily);
@@ -66,6 +68,7 @@ Future<AppController> seededController({
   bool consent = true,
   bool withPhoto = false,
   List<TryOnRecord> history = const [],
+  List<WardrobeItem> wardrobe = const [],
   int creditsUsed = 0,
 }) async {
   SharedPreferences.setMockInitialValues({
@@ -76,8 +79,24 @@ Future<AppController> seededController({
   await controller.load();
   if (withPhoto) controller.profilePhotoPath = profileFixture;
   controller.history = history;
+  controller.wardrobe = wardrobe;
   return controller;
 }
+
+final sampleWardrobeItem = WardrobeItem(
+  id: 'wshot1',
+  createdAt: DateTime(2026, 11, 25, 9, 0),
+  photoPath: garmentFixture,
+  garment: const GarmentProfile(
+    color: GarmentColor.navy,
+    printScale: PrintScale.none,
+    neckline: Neckline.crew,
+    fit: GarmentFit.regular,
+    styles: {StyleTag.casual},
+    occasions: {Occasion.everyday},
+  ),
+  sampledColor: GarmentColor.teal,
+);
 
 TryOnRecord sampleRecord({
   required String id,
@@ -103,7 +122,7 @@ TryOnRecord sampleRecord({
     verdict: verdict,
     cost: const RenderCostRecord(
       providerId: 'demo-composite',
-      estimatedCostPhp: 0,
+      estimatedCostUsd: 0,
       isDemo: true,
       note: 'demo',
     ),
@@ -251,15 +270,15 @@ void main() {
         matchesGoldenFile('../screenshots/dark_result_sampled.png'));
   });
 
-  testWidgets('history empty light', (tester) async {
+  testWidgets('results empty light', (tester) async {
     phoneSurface(tester);
     final controller = await seededController(withPhoto: true);
     await tester.pumpWidget(appWith(controller));
     await tester.pump();
-    await tester.tap(find.text('History'));
+    await tester.tap(find.text('Results'));
     await tester.pump();
     await expectLater(find.byType(MaterialApp),
-        matchesGoldenFile('../screenshots/light_history_empty.png'));
+        matchesGoldenFile('../screenshots/light_results_empty.png'));
   });
 
   testWidgets('credits out dark', (tester) async {
@@ -274,7 +293,7 @@ void main() {
         matchesGoldenFile('../screenshots/dark_credits_empty.png'));
   });
 
-  testWidgets('history light', (tester) async {
+  testWidgets('results gallery light and dark', (tester) async {
     phoneSurface(tester);
     final records = [
       sampleRecord(
@@ -294,11 +313,55 @@ void main() {
         withPhoto: true, history: records, creditsUsed: 2);
     await tester.pumpWidget(appWith(controller));
     await tester.pump();
-    await tester.tap(find.text('History'));
+    await tester.tap(find.text('Results'));
     await tester.pump();
     await settleImages(tester);
     await expectLater(find.byType(MaterialApp),
-        matchesGoldenFile('../screenshots/light_history.png'));
+        matchesGoldenFile('../screenshots/light_results.png'));
+
+    await tester.pumpWidget(appWith(controller, mode: ThemeMode.dark));
+    await tester.pump();
+    await tester.tap(find.text('Results'));
+    await tester.pump();
+    await settleImages(tester);
+    await expectLater(find.byType(MaterialApp),
+        matchesGoldenFile('../screenshots/dark_results.png'));
+  });
+
+  testWidgets('wardrobe light and dark', (tester) async {
+    phoneSurface(tester);
+    final controller = await seededController(
+        withPhoto: true, wardrobe: [sampleWardrobeItem]);
+    await tester.pumpWidget(appWith(controller));
+    await tester.pump();
+    await tester.tap(find.text('Wardrobe'));
+    await tester.pump();
+    await settleImages(tester);
+    await expectLater(find.byType(MaterialApp),
+        matchesGoldenFile('../screenshots/light_wardrobe.png'));
+
+    await tester.pumpWidget(appWith(controller, mode: ThemeMode.dark));
+    await tester.pump();
+    await tester.tap(find.text('Wardrobe'));
+    await tester.pump();
+    await settleImages(tester);
+    await expectLater(find.byType(MaterialApp),
+        matchesGoldenFile('../screenshots/dark_wardrobe.png'));
+  });
+
+  testWidgets('wardrobe item try-on start light', (tester) async {
+    phoneSurface(tester);
+    final controller = await seededController(
+        withPhoto: true, wardrobe: [sampleWardrobeItem]);
+    await tester.pumpWidget(appWith(controller));
+    await tester.pump();
+    await tester.tap(find.text('Wardrobe'));
+    await tester.pump();
+    await settleImages(tester);
+    await tester.tap(find.text('Teal crew neck'));
+    await tester.pumpAndSettle();
+    await expectLater(find.byType(MaterialApp),
+        matchesGoldenFile('../screenshots/light_wardrobe_item.png'));
   });
 
   testWidgets('credits light and dark', (tester) async {

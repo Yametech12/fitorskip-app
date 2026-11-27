@@ -6,6 +6,7 @@ import 'dart:io';
 
 import 'package:material_ui/material_ui.dart';
 
+import '../app_state.dart';
 import '../models.dart';
 import '../widgets/share_verdict_sheet.dart';
 import '../widgets/verdict_card.dart';
@@ -63,6 +64,12 @@ class ResultScreen extends StatelessWidget {
             icon: const Icon(Icons.share_outlined),
             label: const Text('Share verdict'),
           ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: () => _saveRecordToWardrobe(context, record),
+            icon: const Icon(Icons.dry_cleaning_outlined),
+            label: const Text('Save garment to wardrobe'),
+          ),
           const SizedBox(height: 18),
           FilledButton.icon(
             onPressed: () =>
@@ -73,8 +80,8 @@ class ResultScreen extends StatelessWidget {
           const SizedBox(height: 10),
           Center(
             child: Text(
-              'Saved to your history. Render cost recorded: '
-              'P${record.cost.estimatedCostPhp.toStringAsFixed(2)}'
+              'Saved to your Results gallery. Render cost recorded: '
+              '\$${record.cost.estimatedCostUsd.toStringAsFixed(2)}'
               '${record.cost.isDemo ? ' (demo)' : ''}.',
               style: theme.textTheme.bodySmall?.copyWith(
                 color:
@@ -86,6 +93,26 @@ class ResultScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Saves a result's garment into the Wardrobe, with its own copy of
+/// the photo, so deleting the result later cannot break it.
+Future<void> _saveRecordToWardrobe(
+    BuildContext context, TryOnRecord record) async {
+  final controller = AppScope.of(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final stored =
+      await controller.storePhoto(record.garmentPhotoPath, 'wardrobe');
+  await controller.addWardrobeItem(WardrobeItem(
+    id: 'w${DateTime.now().millisecondsSinceEpoch}',
+    createdAt: DateTime.now(),
+    photoPath: stored,
+    garment: record.garment,
+    sampledColor: record.sampledColor,
+  ));
+  messenger.showSnackBar(
+    const SnackBar(content: Text('Saved to your wardrobe.')),
+  );
 }
 
 class _PhotoTile extends StatelessWidget {
