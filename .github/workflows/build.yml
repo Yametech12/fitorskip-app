@@ -20,6 +20,9 @@ jobs:
           channel: stable
       - run: flutter pub get
       - run: flutter analyze
+      # CI-safe tests only. test/screenshots_test.dart is excluded on
+      # purpose: golden bytes are environment-specific.
+      - run: flutter test test/verdict_engine_test.dart test/widget_test.dart test/demo_provider_test.dart
       - run: flutter build apk --debug
       - uses: actions/upload-artifact@v4
         with:
