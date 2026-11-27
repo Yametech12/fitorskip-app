@@ -41,7 +41,10 @@ class VerdictCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                Semantics(
+                  label: 'Bagay Verdict score ${verdict.overallScore} of '
+                      '100, ${verdict.band.label}',
+                  child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Flexible(
@@ -81,9 +84,32 @@ class VerdictCard extends StatelessWidget {
                     const SizedBox(width: 10),
                     _Stamp(band: verdict.band, color: bandColor),
                   ],
+                  ),
                 ),
                 const SizedBox(height: 14),
                 _ScoreBar(score: verdict.overallScore, color: bandColor),
+                if (verdict.colorFromPhoto &&
+                    verdict.sampledColor != null) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Icon(Icons.photo_camera_outlined,
+                          size: 15, color: bandColor),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Color read from your garment photo: '
+                          '${verdict.sampledColor!.label}.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface
+                                .withValues(alpha: 0.72),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 const SizedBox(height: 18),
                 for (final dimension in verdict.dimensions) ...[
                   _DimensionRow(score: dimension, bandColor: bandColor),
@@ -339,6 +365,7 @@ class BandChip extends StatelessWidget {
       ),
       child: Text(
         '${band.label} $score',
+        semanticsLabel: '${band.label}, score $score of 100',
         style: TextStyle(
           fontSize: 11.5,
           fontWeight: FontWeight.w800,

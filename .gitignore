@@ -50,3 +50,8 @@ app.*.map.json
 # Local build outputs and artifacts (never commit)
 /*.apk
 /build-artifacts/
+
+# Release signing: never commit the keystore, its passwords, or key.properties
+/android/key.properties
+*.jks
+/hidden/

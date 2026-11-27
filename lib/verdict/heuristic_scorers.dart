@@ -26,13 +26,18 @@ _ColorFamily _familyOf(GarmentColor color) => switch (color) {
       GarmentColor.yellow ||
       GarmentColor.brown ||
       GarmentColor.beige ||
-      GarmentColor.green =>
+      GarmentColor.green ||
+      GarmentColor.maroon ||
+      GarmentColor.olive ||
+      GarmentColor.mustard =>
         _ColorFamily.warm,
       GarmentColor.blue ||
       GarmentColor.navy ||
       GarmentColor.purple ||
       GarmentColor.pink ||
-      GarmentColor.gray =>
+      GarmentColor.gray ||
+      GarmentColor.teal ||
+      GarmentColor.lavender =>
         _ColorFamily.cool,
       GarmentColor.black || GarmentColor.white => _ColorFamily.neutral,
     };
@@ -49,6 +54,8 @@ class ColorHarmonyScorer implements DimensionScorer {
     var score = switch ((undertone, family)) {
       (Undertone.warm, _ColorFamily.warm) => 88,
       (Undertone.cool, _ColorFamily.cool) => 88,
+      (Undertone.olive, _ColorFamily.warm) => 84,
+      (Undertone.olive, _ColorFamily.cool) => 70,
       (Undertone.neutral, _) => 80,
       (_, _ColorFamily.neutral) => 76,
       _ => 52,
@@ -60,6 +67,9 @@ class ColorHarmonyScorer implements DimensionScorer {
         (color == GarmentColor.beige || color == GarmentColor.white)) {
       score -= 10;
     }
+    if (tone == SkinTone.fair && color == GarmentColor.lavender) {
+      score -= 6;
+    }
     if (tone == SkinTone.deep &&
         (color == GarmentColor.black || color == GarmentColor.navy)) {
       score -= 8;
@@ -67,20 +77,26 @@ class ColorHarmonyScorer implements DimensionScorer {
     if (tone == SkinTone.deep &&
         (color == GarmentColor.red ||
             color == GarmentColor.yellow ||
-            color == GarmentColor.white)) {
+            color == GarmentColor.white ||
+            color == GarmentColor.mustard)) {
       score += 4;
+    }
+    if (tone == SkinTone.deep && color == GarmentColor.teal) {
+      score += 2;
     }
     return score.clamp(0, 100).toInt();
   }
 
   @override
   DimensionScore score(VerdictContext context) {
-    final color = context.garment.color;
+    final color = context.effectiveColor;
     final value = _scoreFor(context, color);
+    final source =
+        context.colorFromPhoto ? '${color.label} (read from your photo)' : color.label;
     final note = switch (value) {
-      >= 84 => '${color.label} sits well with your skin tone.',
-      >= 65 => '${color.label} works, but it is not your strongest color.',
-      _ => '${color.label} fights your undertone a little.',
+      >= 84 => '$source sits well with your skin tone.',
+      >= 65 => '$source works, but it is not your strongest color.',
+      _ => '$source fights your undertone a little.',
     };
     return DimensionScore(
         dimension: dimension, score: value, note: note);
@@ -174,18 +190,24 @@ class PrintScaleScorer implements DimensionScorer {
       PrintScale.small: 88,
       PrintScale.medium: 70,
       PrintScale.large: 46,
+      PrintScale.micro: 90,
+      PrintScale.statement: 42,
     },
     BodyFrame.average: {
       PrintScale.none: 80,
       PrintScale.small: 82,
       PrintScale.medium: 86,
       PrintScale.large: 64,
+      PrintScale.micro: 78,
+      PrintScale.statement: 60,
     },
     BodyFrame.broad: {
       PrintScale.none: 80,
       PrintScale.small: 68,
       PrintScale.medium: 84,
       PrintScale.large: 88,
+      PrintScale.micro: 62,
+      PrintScale.statement: 86,
     },
   };
 
@@ -222,6 +244,8 @@ class PrintScaleScorer implements DimensionScorer {
       PrintScale.small => 'a smaller, tighter print',
       PrintScale.medium => 'a medium scale print',
       PrintScale.large => 'a bolder, larger print',
+      PrintScale.micro => 'a fine micro print',
+      PrintScale.statement => 'a bold statement print',
       PrintScale.none => 'a plain version with no print',
     };
     return 'Try $word. Print scale should match your frame.';
@@ -241,6 +265,9 @@ class NecklineScorer implements DimensionScorer {
       Neckline.collared: 82,
       Neckline.henley: 86,
       Neckline.turtleneck: 64,
+      Neckline.boat: 74,
+      Neckline.square: 82,
+      Neckline.hooded: 70,
     },
     BodyFrame.average: {
       Neckline.crew: 84,
@@ -249,6 +276,9 @@ class NecklineScorer implements DimensionScorer {
       Neckline.collared: 88,
       Neckline.henley: 84,
       Neckline.turtleneck: 72,
+      Neckline.boat: 80,
+      Neckline.square: 78,
+      Neckline.hooded: 76,
     },
     BodyFrame.broad: {
       Neckline.crew: 72,
@@ -257,6 +287,9 @@ class NecklineScorer implements DimensionScorer {
       Neckline.collared: 90,
       Neckline.henley: 80,
       Neckline.turtleneck: 78,
+      Neckline.boat: 84,
+      Neckline.square: 74,
+      Neckline.hooded: 82,
     },
   };
 
@@ -337,6 +370,17 @@ class OccasionFitScorer implements DimensionScorer {
   @override
   VerdictDimension get dimension => VerdictDimension.occasionFit;
 
+  /// Adjacent occasions: a garment made for the mapped occasion can
+  /// stretch to the key occasion with effort. Everyday pieces stretch
+  /// furthest; an office piece reads formal enough for church.
+  static const Map<Occasion, Occasion> _stretchSource = {
+    Occasion.school: Occasion.everyday,
+    Occasion.date: Occasion.everyday,
+    Occasion.beach: Occasion.everyday,
+    Occasion.sports: Occasion.everyday,
+    Occasion.church: Occasion.office,
+  };
+
   @override
   DimensionScore score(VerdictContext context) {
     final target = context.occasion;
@@ -346,10 +390,10 @@ class OccasionFitScorer implements DimensionScorer {
     if (garmentOccasions.contains(target)) {
       value = 90;
       note = 'Right at home for ${target.label.toLowerCase()}.';
-    } else if (garmentOccasions.contains(Occasion.everyday) &&
-        (target == Occasion.school || target == Occasion.date)) {
+    } else if (_stretchSource.containsKey(target) &&
+        garmentOccasions.contains(_stretchSource[target])) {
       value = 62;
-      note = 'An everyday piece can stretch here, with effort.';
+      note = 'This piece can stretch here, with effort.';
     } else {
       value = 44;
       note = 'This piece is dressed for a different occasion.';

@@ -7,7 +7,7 @@ on:
 
 jobs:
   android:
-    name: Android APK (debug proof)
+    name: Android APK (release, signed)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,12 +22,28 @@ jobs:
       - run: flutter analyze
       # CI-safe tests only. test/screenshots_test.dart is excluded on
       # purpose: golden bytes are environment-specific.
-      - run: flutter test test/verdict_engine_test.dart test/widget_test.dart test/demo_provider_test.dart
-      - run: flutter build apk --debug
+      - run: flutter test test/verdict_engine_test.dart test/widget_test.dart test/demo_provider_test.dart test/color_sampling_test.dart
+      - name: Restore release keystore from secrets
+        env:
+          KEYSTORE_BASE64: ${{ secrets.FIT_RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.FIT_KEYSTORE_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/fitorskip-release.jks
+          cat > android/key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEYSTORE_PASSWORD
+          keyAlias=fitorskip
+          storeFile=fitorskip-release.jks
+          EOF
+      - run: flutter build apk --release
+      - name: Verify APK signature
+        run: |
+          APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs build/app/outputs/flutter-apk/app-release.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: fitorskip-android-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: fitorskip-android-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
 
   ios:
     name: iOS build (no codesign proof)

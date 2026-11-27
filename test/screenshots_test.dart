@@ -84,11 +84,13 @@ TryOnRecord sampleRecord({
   required GarmentProfile garment,
   required Occasion occasion,
   required DateTime at,
+  GarmentColor? sampledColor,
 }) {
   final verdict = buildHeuristicVerdictEngine().evaluate(VerdictContext(
     wearer: WearerProfile.defaults,
     garment: garment,
     occasion: occasion,
+    sampledColor: sampledColor,
   ));
   return TryOnRecord.fromVerdict(
     id: id,
@@ -211,6 +213,65 @@ void main() {
     await settleImages(tester);
     await expectLater(find.byType(MaterialApp),
         matchesGoldenFile('../screenshots/dark_result.png'));
+  });
+
+  testWidgets('result photo-sampled light and dark', (tester) async {
+    phoneSurface(tester);
+    final record = sampleRecord(
+      id: 'shot2',
+      garment: pwedeGarment,
+      occasion: Occasion.everyday,
+      at: DateTime(2026, 11, 27, 15, 5),
+      sampledColor: GarmentColor.teal,
+    );
+    final controller = await seededController();
+    await tester.pumpWidget(AppScope(
+      controller: controller,
+      child: MaterialApp(
+        theme: withTestFont(FitTheme.light()),
+        home: ResultScreen(record: record),
+      ),
+    ));
+    await tester.pump();
+    await settleImages(tester);
+    await expectLater(find.byType(MaterialApp),
+        matchesGoldenFile('../screenshots/light_result_sampled.png'));
+
+    await tester.pumpWidget(AppScope(
+      controller: controller,
+      child: MaterialApp(
+        key: UniqueKey(),
+        theme: withTestFont(FitTheme.dark()),
+        home: ResultScreen(record: record),
+      ),
+    ));
+    await tester.pump();
+    await settleImages(tester);
+    await expectLater(find.byType(MaterialApp),
+        matchesGoldenFile('../screenshots/dark_result_sampled.png'));
+  });
+
+  testWidgets('history empty light', (tester) async {
+    phoneSurface(tester);
+    final controller = await seededController(withPhoto: true);
+    await tester.pumpWidget(appWith(controller));
+    await tester.pump();
+    await tester.tap(find.text('History'));
+    await tester.pump();
+    await expectLater(find.byType(MaterialApp),
+        matchesGoldenFile('../screenshots/light_history_empty.png'));
+  });
+
+  testWidgets('credits out dark', (tester) async {
+    phoneSurface(tester);
+    final controller =
+        await seededController(withPhoto: true, creditsUsed: 3);
+    await tester.pumpWidget(appWith(controller, mode: ThemeMode.dark));
+    await tester.pump();
+    await tester.tap(find.text('Credits'));
+    await tester.pump();
+    await expectLater(find.byType(MaterialApp),
+        matchesGoldenFile('../screenshots/dark_credits_empty.png'));
   });
 
   testWidgets('history light', (tester) async {

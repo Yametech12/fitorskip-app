@@ -63,7 +63,7 @@ extension VerdictDimensionLabel on VerdictDimension {
 
 enum SkinTone { fair, lightMedium, medium, deep }
 
-enum Undertone { warm, cool, neutral }
+enum Undertone { warm, cool, neutral, olive }
 
 enum GarmentColor {
   black,
@@ -79,6 +79,11 @@ enum GarmentColor {
   purple,
   brown,
   beige,
+  maroon,
+  olive,
+  teal,
+  lavender,
+  mustard,
 }
 
 extension GarmentColorLabel on GarmentColor {
@@ -96,12 +101,17 @@ extension GarmentColorLabel on GarmentColor {
         GarmentColor.purple => 'Purple',
         GarmentColor.brown => 'Brown',
         GarmentColor.beige => 'Beige or cream',
+        GarmentColor.maroon => 'Maroon',
+        GarmentColor.olive => 'Olive',
+        GarmentColor.teal => 'Teal',
+        GarmentColor.lavender => 'Lavender',
+        GarmentColor.mustard => 'Mustard',
       };
 }
 
-enum PrintScale { none, small, medium, large }
+enum PrintScale { none, small, medium, large, micro, statement }
 
-enum Neckline { crew, vNeck, scoop, collared, henley, turtleneck }
+enum Neckline { crew, vNeck, scoop, collared, henley, turtleneck, boat, square, hooded }
 
 extension NecklineLabel on Neckline {
   String get label => switch (this) {
@@ -111,6 +121,9 @@ extension NecklineLabel on Neckline {
         Neckline.collared => 'Collared or polo',
         Neckline.henley => 'Henley',
         Neckline.turtleneck => 'Turtleneck',
+        Neckline.boat => 'Boat neck',
+        Neckline.square => 'Square neck',
+        Neckline.hooded => 'Hooded',
       };
 }
 
@@ -127,7 +140,7 @@ extension GarmentFitLabel on GarmentFit {
 
 enum BodyFrame { slim, average, broad }
 
-enum StyleTag { casual, street, smartCasual, formal, sporty, vintage }
+enum StyleTag { casual, street, smartCasual, formal, sporty, vintage, minimalist, preppy }
 
 extension StyleTagLabel on StyleTag {
   String get label => switch (this) {
@@ -137,10 +150,12 @@ extension StyleTagLabel on StyleTag {
         StyleTag.formal => 'Formal',
         StyleTag.sporty => 'Sporty',
         StyleTag.vintage => 'Vintage',
+        StyleTag.minimalist => 'Minimalist',
+        StyleTag.preppy => 'Preppy',
       };
 }
 
-enum Occasion { everyday, school, office, event, date, church }
+enum Occasion { everyday, school, office, event, date, church, beach, sports }
 
 extension OccasionLabel on Occasion {
   String get label => switch (this) {
@@ -150,6 +165,8 @@ extension OccasionLabel on Occasion {
         Occasion.event => 'Event or party',
         Occasion.date => 'Date',
         Occasion.church => 'Church',
+        Occasion.beach => 'Beach or outing',
+        Occasion.sports => 'Sports or gym',
       };
 }
 
@@ -238,6 +255,7 @@ class VerdictContext {
     required this.wearer,
     required this.garment,
     required this.occasion,
+    this.sampledColor,
   });
 
   final WearerProfile wearer;
@@ -245,6 +263,17 @@ class VerdictContext {
 
   /// The occasion the wearer picked for this try-on.
   final Occasion occasion;
+
+  /// The garment color measured from the garment photo on device, when
+  /// sampling succeeded. Null means sampling failed or was not attempted,
+  /// and scorers fall back to the descriptor color in [garment].
+  final GarmentColor? sampledColor;
+
+  /// The color the verdict actually scores: the measured photo color when
+  /// present, otherwise the wearer-confirmed descriptor color.
+  GarmentColor get effectiveColor => sampledColor ?? garment.color;
+
+  bool get colorFromPhoto => sampledColor != null;
 }
 
 class DimensionScore {
@@ -280,11 +309,20 @@ class VerdictResult {
     required this.suggestedFix,
     required this.fixDimension,
     required this.honestyNote,
+    this.colorFromPhoto = false,
+    this.sampledColor,
   });
 
   final int overallScore;
   final VerdictBand band;
   final List<DimensionScore> dimensions;
+
+  /// True when the scored color was measured from the garment photo rather
+  /// than picked from the descriptor list. The verdict card says so.
+  final bool colorFromPhoto;
+
+  /// The measured color, when [colorFromPhoto] is true.
+  final GarmentColor? sampledColor;
 
   /// One suggested fix, present whenever the verdict is not BAGAY.
   final String? suggestedFix;
@@ -362,6 +400,8 @@ class VerdictEngine {
       suggestedFix: fix,
       fixDimension: fixDimension,
       honestyNote: kVerdictHonestyNote,
+      colorFromPhoto: context.colorFromPhoto,
+      sampledColor: context.sampledColor,
     );
   }
 }

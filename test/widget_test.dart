@@ -2,8 +2,15 @@ import 'package:material_ui/material_ui.dart' show Size;
 
 import 'package:fitorskip/app_state.dart';
 import 'package:fitorskip/main.dart';
+import 'package:fitorskip/models.dart';
+import 'package:fitorskip/render/try_on_provider.dart';
+import 'package:fitorskip/screens/result_screen.dart';
+import 'package:fitorskip/verdict/heuristic_scorers.dart';
 import 'package:fitorskip/verdict/verdict_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fitorskip/widgets/share_verdict_sheet.dart';
+import 'package:material_ui/material_ui.dart'
+    show MaterialApp, Scrollable, Switch, SwitchListTile;
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<AppController> loadedController(
@@ -112,6 +119,79 @@ void main() {
     await tester.scrollUntilVisible(
         find.text('Made by Mohammad Sidique Ibrahim'), 200);
     expect(find.text('Made by Mohammad Sidique Ibrahim'), findsOneWidget);
+  });
+
+  testWidgets('share verdict sheet previews the card, render opt-in off',
+      (tester) async {
+    usePhoneSurface(tester);
+    const garment = GarmentProfile(
+      color: GarmentColor.navy,
+      printScale: PrintScale.large,
+      neckline: Neckline.turtleneck,
+      fit: GarmentFit.slim,
+      styles: {StyleTag.casual},
+      occasions: {Occasion.everyday},
+    );
+    final verdict = buildHeuristicVerdictEngine().evaluate(
+      const VerdictContext(
+        wearer: WearerProfile.defaults,
+        garment: garment,
+        occasion: Occasion.everyday,
+        sampledColor: GarmentColor.teal,
+      ),
+    );
+    final record = TryOnRecord.fromVerdict(
+      id: 'share1',
+      createdAt: DateTime(2026, 11, 27, 12, 30),
+      profilePhotoPath: 'test/fixtures/profile.png',
+      garmentPhotoPath: 'test/fixtures/garment.png',
+      renderPhotoPath: 'test/fixtures/garment.png',
+      garment: garment,
+      occasion: Occasion.everyday,
+      verdict: verdict,
+      cost: const RenderCostRecord(
+        providerId: 'demo-composite',
+        estimatedCostPhp: 0,
+        isDemo: true,
+        note: 'demo',
+      ),
+    );
+    await tester.pumpWidget(MaterialApp(home: ResultScreen(record: record)));
+    await tester.pump();
+
+    // The verdict card states the color came from the photo.
+    expect(find.textContaining('read from your garment photo'),
+        findsOneWidget);
+
+    await tester.scrollUntilVisible(find.text('Share verdict'), 200);
+    await tester.tap(find.text('Share verdict'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Share your verdict'), findsOneWidget);
+    expect(find.text('Include the demo render'), findsOneWidget);
+    expect(find.text('FitOrSkip - Made by Mohammad Sidique Ibrahim'),
+        findsOneWidget);
+    final tile = tester.widget<SwitchListTile>(
+        find.byType(SwitchListTile));
+    expect(tile.value, isFalse);
+
+    await tester.scrollUntilVisible(
+      find.byType(SwitchListTile),
+      120,
+      scrollable: find.descendant(
+        of: find.byType(ShareVerdictSheet),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(
+      of: find.byType(SwitchListTile),
+      matching: find.byType(Switch),
+    ));
+    await tester.pump();
+    final tileOn = tester.widget<SwitchListTile>(
+        find.byType(SwitchListTile));
+    expect(tileOn.value, isTrue);
   });
 
   test('credit model matches the plan numbers', () {

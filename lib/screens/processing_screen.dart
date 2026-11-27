@@ -10,6 +10,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../app_state.dart';
 import '../models.dart';
+import '../render/photo_color_sampler.dart';
 import '../render/try_on_provider.dart';
 import '../verdict/verdict_engine.dart';
 import 'result_screen.dart';
@@ -88,12 +89,18 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
       garmentPhotoPath: widget.garmentPhotoPath,
     );
     try {
+      // Measure the garment color from the photo while the render runs.
+      // Null on any failure: the engine then scores the descriptor color.
+      final sampledColorFuture =
+          sampleGarmentPhotoColor(widget.garmentPhotoPath);
       final result = await controller.renderProvider
           .render(request, timeout: ProcessingScreen.hardTimeout);
+      final sampledColor = await sampledColorFuture;
       final verdict = controller.verdictEngine.evaluate(VerdictContext(
         wearer: controller.wearer,
         garment: widget.garment,
         occasion: widget.occasion,
+        sampledColor: sampledColor,
       ));
       final renderFile =
           await controller.writeRenderBytes(request.id, result.renderPngBytes);
@@ -185,7 +192,7 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
               ),
             ),
             Text(
-              'Free retry if it passes 90s',
+              'Stops at 90s; the retry is free',
               style: theme.textTheme.bodySmall?.copyWith(
                 color:
                     theme.colorScheme.onSurface.withValues(alpha: 0.6),
@@ -222,10 +229,12 @@ class _ProcessingScreenState extends State<ProcessingScreen> {
         Text(
           _timedOut
               ? 'The render passed the 90 second limit, so it was '
-                  'stopped. No credit was used. Retry for free, or check '
-                  'your connection and try again.'
-              : 'Something interrupted the render. No credit was used. '
-                  'Retry for free.',
+                  'stopped before it could finish. No credit was used, '
+                  'and retrying costs nothing. If it keeps timing out, '
+                  'check your connection and try again on stronger '
+                  'signal.'
+              : 'Something interrupted the render before it finished. '
+                  'No credit was used, and retrying costs nothing.',
           style: theme.textTheme.bodyMedium,
         ),
         const SizedBox(height: 24),

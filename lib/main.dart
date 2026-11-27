@@ -42,12 +42,22 @@ class _FitOrSkipAppState extends State<FitOrSkipApp> {
   ThemeData _themed(ThemeData base) {
     final family = widget.fontFamily;
     if (family == null) return base;
+    // Button labels in this UI fork resolve their text style outside the
+    // text theme, so the family is applied to the button themes as well.
+    // This path runs only when a test font family is injected.
+    final buttonText = ButtonStyle(
+      textStyle:
+          WidgetStatePropertyAll(TextStyle(fontFamily: family)),
+    );
     return base.copyWith(
       textTheme: base.textTheme.apply(fontFamily: family),
       appBarTheme: base.appBarTheme.copyWith(
         titleTextStyle:
             base.appBarTheme.titleTextStyle?.copyWith(fontFamily: family),
       ),
+      filledButtonTheme: FilledButtonThemeData(style: buttonText),
+      outlinedButtonTheme: OutlinedButtonThemeData(style: buttonText),
+      textButtonTheme: TextButtonThemeData(style: buttonText),
     );
   }
 

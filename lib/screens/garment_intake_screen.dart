@@ -150,6 +150,8 @@ class _GarmentIntakeScreenState extends State<GarmentIntakeScreen> {
             PrintScale.small => 'Small print',
             PrintScale.medium => 'Medium print',
             PrintScale.large => 'Large print',
+            PrintScale.micro => 'Micro print, all over',
+            PrintScale.statement => 'Statement print, one big graphic',
           },
           onChanged: (v) => setState(() => _printScale = v),
         ),

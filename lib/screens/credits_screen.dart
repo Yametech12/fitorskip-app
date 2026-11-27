@@ -55,6 +55,44 @@ class CreditsScreen extends StatelessWidget {
             ],
           ),
         ),
+        if (controller.creditsRemaining == 0) ...[
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.error.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: theme.colorScheme.error.withValues(alpha: 0.45),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline,
+                    size: 20, color: theme.colorScheme.error),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    'You are out of free try-ons. New try-ons pause '
+                    'until credit packs arrive in a later phase. Your '
+                    'history and verdicts stay on this phone.',
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ] else if (controller.creditsUsed == 0) ...[
+          const SizedBox(height: 12),
+          Text(
+            'None used yet. Your first three verdicts are free.',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.66),
+            ),
+          ),
+        ],
         const SizedBox(height: 22),
         Text('How credits work', style: theme.textTheme.titleMedium),
         const SizedBox(height: 10),

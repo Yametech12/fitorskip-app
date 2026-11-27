@@ -22,6 +22,7 @@ class TryOnRecord {
     required this.dimensionNotes,
     required this.suggestedFix,
     required this.cost,
+    this.sampledColor,
   });
 
   final String id;
@@ -37,6 +38,11 @@ class TryOnRecord {
   final Map<VerdictDimension, String> dimensionNotes;
   final String? suggestedFix;
   final RenderCostRecord cost;
+
+  /// The garment color measured from the garment photo, when sampling
+  /// succeeded for this try-on. Null for descriptor-scored records,
+  /// including every record written before photo sampling existed.
+  final GarmentColor? sampledColor;
 
   factory TryOnRecord.fromVerdict({
     required String id,
@@ -67,6 +73,7 @@ class TryOnRecord {
       },
       suggestedFix: verdict.suggestedFix,
       cost: cost,
+      sampledColor: verdict.sampledColor,
     );
   }
 
@@ -84,6 +91,8 @@ class TryOnRecord {
         suggestedFix: suggestedFix,
         fixDimension: null,
         honestyNote: kVerdictHonestyNote,
+        colorFromPhoto: sampledColor != null,
+        sampledColor: sampledColor,
       );
 
   Map<String, Object?> toJson() => {
@@ -104,6 +113,7 @@ class TryOnRecord {
         },
         'suggestedFix': suggestedFix,
         'cost': cost.toJson(),
+        'sampledColor': sampledColor?.name,
       };
 
   factory TryOnRecord.fromJson(Map<String, Object?> json) => TryOnRecord(
@@ -130,5 +140,8 @@ class TryOnRecord {
         suggestedFix: json['suggestedFix'] as String?,
         cost: RenderCostRecord.fromJson(
             (json['cost'] as Map).cast<String, Object?>()),
+        sampledColor: json['sampledColor'] == null
+            ? null
+            : GarmentColor.values.byName(json['sampledColor'] as String),
       );
 }

@@ -12,7 +12,10 @@ import '../widgets/verdict_card.dart';
 import 'result_screen.dart';
 
 class HistoryScreen extends StatelessWidget {
-  const HistoryScreen({super.key});
+  const HistoryScreen({super.key, this.onTryOn});
+
+  /// Sends the wearer to the Try on tab from the empty state.
+  final VoidCallback? onTryOn;
 
   @override
   Widget build(BuildContext context) {
@@ -32,13 +35,22 @@ class HistoryScreen extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               'Your finished try-ons and their Bagay Verdicts will '
-              'collect here.',
+              'collect here. Each one keeps its score, its fix, and its '
+              'photos, so you can compare before you buy.',
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color:
                     theme.colorScheme.onSurface.withValues(alpha: 0.66),
               ),
             ),
+            if (onTryOn != null) ...[
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                onPressed: onTryOn,
+                icon: const Icon(Icons.checkroom_outlined),
+                label: const Text('Try on a garment'),
+              ),
+            ],
           ],
         ),
       );

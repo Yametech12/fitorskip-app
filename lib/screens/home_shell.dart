@@ -31,11 +31,11 @@ class _HomeShellState extends State<HomeShell> {
       appBar: AppBar(title: Text(_titles[_index])),
       body: IndexedStack(
         index: _index,
-        children: const [
-          GarmentIntakeScreen(),
-          HistoryScreen(),
-          CreditsScreen(),
-          AboutScreen(),
+        children: [
+          const GarmentIntakeScreen(),
+          HistoryScreen(onTryOn: () => setState(() => _index = 0)),
+          const CreditsScreen(),
+          const AboutScreen(),
         ],
       ),
       bottomNavigationBar: NavigationBar(

@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:material_ui/material_ui.dart';
 
 import '../models.dart';
+import '../widgets/share_verdict_sheet.dart';
 import '../widgets/verdict_card.dart';
 
 class ResultScreen extends StatelessWidget {
@@ -56,6 +57,12 @@ class ResultScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           VerdictCard(verdict: record.toVerdictResult()),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => showShareVerdictSheet(context, record),
+            icon: const Icon(Icons.share_outlined),
+            label: const Text('Share verdict'),
+          ),
           const SizedBox(height: 18),
           FilledButton.icon(
             onPressed: () =>

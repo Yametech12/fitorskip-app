@@ -277,4 +277,186 @@ void main() {
       expect(result.suggestedFix, isNull);
     });
   });
+
+  group('expanded tables (GT-176)', () {
+    final engine = buildHeuristicVerdictEngine();
+
+    int dimensionScore(VerdictResult r, VerdictDimension d) =>
+        r.dimensions.firstWhere((s) => s.dimension == d).score;
+
+    GarmentProfile garmentWith({
+      GarmentColor color = GarmentColor.red,
+      PrintScale printScale = PrintScale.none,
+      Neckline neckline = Neckline.collared,
+      Set<Occasion> occasions = const {Occasion.everyday},
+      Set<StyleTag> styles = const {StyleTag.casual},
+    }) =>
+        GarmentProfile(
+          color: color,
+          printScale: printScale,
+          neckline: neckline,
+          fit: GarmentFit.regular,
+          styles: styles,
+          occasions: occasions,
+        );
+
+    test('olive undertone: warm colors lead, cool colors trail', () {
+      const oliveWearer = WearerProfile(
+        skinTone: SkinTone.medium,
+        undertone: Undertone.olive,
+        frame: BodyFrame.average,
+        preferredStyles: {StyleTag.casual},
+      );
+      final warm = engine.evaluate(
+          contextWith(garmentWith(), w: oliveWearer));
+      expect(dimensionScore(warm, VerdictDimension.colorHarmony), 84);
+      final cool = engine.evaluate(contextWith(
+          garmentWith(color: GarmentColor.blue), w: oliveWearer));
+      expect(dimensionScore(cool, VerdictDimension.colorHarmony), 70);
+    });
+
+    test('new colors land in their families', () {
+      // Warm wearer (default): maroon and mustard are warm, teal is cool.
+      final maroon = engine.evaluate(
+          contextWith(garmentWith(color: GarmentColor.maroon)));
+      expect(dimensionScore(maroon, VerdictDimension.colorHarmony), 88);
+      final teal = engine.evaluate(
+          contextWith(garmentWith(color: GarmentColor.teal)));
+      expect(dimensionScore(teal, VerdictDimension.colorHarmony), 52);
+      const coolWearer = WearerProfile(
+        skinTone: SkinTone.medium,
+        undertone: Undertone.cool,
+        frame: BodyFrame.average,
+        preferredStyles: {StyleTag.casual},
+      );
+      final tealCool = engine.evaluate(contextWith(
+          garmentWith(color: GarmentColor.teal), w: coolWearer));
+      expect(dimensionScore(tealCool, VerdictDimension.colorHarmony), 88);
+    });
+
+    test('new contrast adjustments: lavender washout, mustard and teal '
+        'bonuses', () {
+      const fairCool = WearerProfile(
+        skinTone: SkinTone.fair,
+        undertone: Undertone.cool,
+        frame: BodyFrame.average,
+        preferredStyles: {StyleTag.casual},
+      );
+      final lavender = engine.evaluate(contextWith(
+          garmentWith(color: GarmentColor.lavender), w: fairCool));
+      // Cool match 88 minus fair-skin lavender washout 6.
+      expect(dimensionScore(lavender, VerdictDimension.colorHarmony), 82);
+
+      const deepWarm = WearerProfile(
+        skinTone: SkinTone.deep,
+        undertone: Undertone.warm,
+        frame: BodyFrame.average,
+        preferredStyles: {StyleTag.casual},
+      );
+      final mustard = engine.evaluate(contextWith(
+          garmentWith(color: GarmentColor.mustard), w: deepWarm));
+      // Warm match 88 plus deep-skin bright bonus 4.
+      expect(dimensionScore(mustard, VerdictDimension.colorHarmony), 92);
+
+      const deepCool = WearerProfile(
+        skinTone: SkinTone.deep,
+        undertone: Undertone.cool,
+        frame: BodyFrame.average,
+        preferredStyles: {StyleTag.casual},
+      );
+      final teal = engine.evaluate(contextWith(
+          garmentWith(color: GarmentColor.teal), w: deepCool));
+      // Cool match 88 plus deep-skin teal bonus 2.
+      expect(dimensionScore(teal, VerdictDimension.colorHarmony), 90);
+    });
+
+    test('micro and statement prints follow the frame table', () {
+      const slimWearer = WearerProfile(
+        skinTone: SkinTone.medium,
+        undertone: Undertone.warm,
+        frame: BodyFrame.slim,
+        preferredStyles: {StyleTag.casual},
+      );
+      final micro = engine.evaluate(contextWith(
+          garmentWith(printScale: PrintScale.micro), w: slimWearer));
+      expect(dimensionScore(micro, VerdictDimension.printScale), 90);
+      final statementSlim = engine.evaluate(contextWith(
+          garmentWith(printScale: PrintScale.statement), w: slimWearer));
+      expect(
+          dimensionScore(statementSlim, VerdictDimension.printScale), 42);
+
+      const broadWearer = WearerProfile(
+        skinTone: SkinTone.medium,
+        undertone: Undertone.warm,
+        frame: BodyFrame.broad,
+        preferredStyles: {StyleTag.casual},
+      );
+      final statementBroad = engine.evaluate(contextWith(
+          garmentWith(printScale: PrintScale.statement), w: broadWearer));
+      expect(
+          dimensionScore(statementBroad, VerdictDimension.printScale), 86);
+    });
+
+    test('boat, square, and hooded necklines follow the frame table', () {
+      const broadWearer = WearerProfile(
+        skinTone: SkinTone.medium,
+        undertone: Undertone.warm,
+        frame: BodyFrame.broad,
+        preferredStyles: {StyleTag.casual},
+      );
+      final boat = engine.evaluate(contextWith(
+          garmentWith(neckline: Neckline.boat), w: broadWearer));
+      expect(dimensionScore(boat, VerdictDimension.neckline), 84);
+      final hooded = engine.evaluate(contextWith(
+          garmentWith(neckline: Neckline.hooded), w: broadWearer));
+      expect(dimensionScore(hooded, VerdictDimension.neckline), 82);
+
+      const slimWearer = WearerProfile(
+        skinTone: SkinTone.medium,
+        undertone: Undertone.warm,
+        frame: BodyFrame.slim,
+        preferredStyles: {StyleTag.casual},
+      );
+      final square = engine.evaluate(contextWith(
+          garmentWith(neckline: Neckline.square), w: slimWearer));
+      expect(dimensionScore(square, VerdictDimension.neckline), 82);
+    });
+
+    test('occasion stretch map covers beach, sports, and church', () {
+      final beach = engine.evaluate(contextWith(garmentWith(),
+          occasion: Occasion.beach));
+      expect(dimensionScore(beach, VerdictDimension.occasionFit), 62);
+      final sports = engine.evaluate(contextWith(garmentWith(),
+          occasion: Occasion.sports));
+      expect(dimensionScore(sports, VerdictDimension.occasionFit), 62);
+      final church = engine.evaluate(contextWith(
+        garmentWith(occasions: const {Occasion.office}),
+        occasion: Occasion.church,
+      ));
+      expect(dimensionScore(church, VerdictDimension.occasionFit), 62);
+      // No adjacency: an everyday piece at a formal event still fails.
+      final event = engine.evaluate(contextWith(garmentWith(),
+          occasion: Occasion.event));
+      expect(dimensionScore(event, VerdictDimension.occasionFit), 44);
+    });
+
+    test('new style tags score by the same overlap rule', () {
+      const minimalistWearer = WearerProfile(
+        skinTone: SkinTone.medium,
+        undertone: Undertone.warm,
+        frame: BodyFrame.average,
+        preferredStyles: {StyleTag.minimalist},
+      );
+      final match = engine.evaluate(contextWith(
+        garmentWith(styles: const {StyleTag.minimalist}),
+        w: minimalistWearer,
+      ));
+      expect(dimensionScore(match, VerdictDimension.styleMatch), 100);
+      final miss = engine.evaluate(contextWith(
+        garmentWith(styles: const {StyleTag.preppy}),
+        w: minimalistWearer,
+      ));
+      expect(dimensionScore(miss, VerdictDimension.styleMatch), 45);
+    });
+  });
 }
