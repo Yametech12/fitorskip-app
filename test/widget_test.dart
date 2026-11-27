@@ -247,6 +247,8 @@ void main() {
     await tester.tap(find.textContaining('2026-11-27'));
     await tester.pumpAndSettle();
     expect(find.text('Your verdict'), findsOneWidget);
+    await tester.scrollUntilVisible(
+        find.text('Save garment to wardrobe'), 200);
     expect(find.text('Save garment to wardrobe'), findsOneWidget);
   });
 
