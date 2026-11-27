@@ -547,9 +547,11 @@ Widget resultComposition({
     body: ListView(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
       children: [
-        VerdictCard(verdict: record.toVerdictResult()),
-        const SizedBox(height: 14),
+        // The engine leads: it is what makes the direction different.
+        // The full verdict card follows below it.
         engine,
+        const SizedBox(height: 14),
+        VerdictCard(verdict: record.toVerdictResult()),
       ],
     ),
   );
@@ -577,6 +579,16 @@ void main() {
     ));
     await tester.pump();
     await tester.runAsync(() async {
+      final context = tester.element(find.byType(MaterialApp));
+      await precacheImage(FileImage(File(garmentFixture)), context);
+      await precacheImage(
+        ResizeImage(FileImage(File(garmentFixture)), width: 540),
+        context,
+      );
+      await precacheImage(
+        ResizeImage(FileImage(File(garmentFixture)), width: 396),
+        context,
+      );
       await Future<void>.delayed(const Duration(milliseconds: 250));
     });
     await tester.pump();

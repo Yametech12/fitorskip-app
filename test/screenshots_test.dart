@@ -152,6 +152,13 @@ Future<void> settleImages(WidgetTester tester) async {
   await tester.runAsync(() async {
     await precacheImage(FileImage(File(profileFixture)), context);
     await precacheImage(FileImage(File(garmentFixture)), context);
+    // The Results and Wardrobe grids decode at tile width (cacheWidth
+    // 540): precache that resized variant too, or the capture can
+    // snap before the resized decode lands.
+    await precacheImage(
+      ResizeImage(FileImage(File(garmentFixture)), width: 540),
+      context,
+    );
     await Future<void>.delayed(const Duration(milliseconds: 300));
   });
   await tester.pump();
