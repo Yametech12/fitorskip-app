@@ -35,13 +35,16 @@ jobs:
           keyAlias=fitorskip
           storeFile=fitorskip-release.jks
           EOF
-      # Split per ABI (GT-176 item 9): each phone downloads only its
-      # own architecture slice instead of the universal debug bundle.
-      - run: flutter build apk --release --split-per-abi
+      # Universal APK (GT-192 fix): GT-176 built --split-per-abi and
+      # shipped only the arm64-v8a slice, which 32-bit Android phones
+      # (the owner's Redmi A2+) refuse to install. One universal APK
+      # carries armeabi-v7a, arm64-v8a and x86_64, so a single file
+      # installs on both 32-bit and 64-bit devices.
+      - run: flutter build apk --release
       - name: Verify APK signatures and record sizes
         run: |
           APKSIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
-          for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
+          for apk in build/app/outputs/flutter-apk/app-release.apk; do
             echo "== $apk"
             stat -c '%s bytes' "$apk"
             "$APKSIGNER" verify --print-certs "$apk" | head -3
@@ -49,7 +52,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: fitorskip-android-release-apk
-          path: build/app/outputs/flutter-apk/app-*-release.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
 
   ios:
     name: iOS build (no codesign proof)
